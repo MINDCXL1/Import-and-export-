@@ -10,7 +10,6 @@ class Index extends Controller
     {
        return  $this->fetch();
     }
-
     public function inserexcel()
     {
         Loader::import('PHPExcel.PHPExcel');
@@ -26,7 +25,7 @@ class Index extends Controller
             $file_name = ROOT_PATH . 'public' . DS . 'uploads' . DS . $exclePath;   //上传文件的地址
             $objReader =\PHPExcel_IOFactory::createReader("Excel2007");
             $obj_PHPExcel =$objReader->load($file_name, $encode = 'utf-8');  //加载文件内容,编码utf-8
-            echo "<pre>";
+
             $excel_array=$obj_PHPExcel->getsheet(0)->toArray();   //转换为数组格式
             print_r($excel_array);exit;
             array_shift($excel_array);  //删除第一个数组(标题);
@@ -54,7 +53,61 @@ class Index extends Controller
 
     public function index()
     {
+        if(cookie('username')){
+            session('username',cookie('username'));
+        }
+        if(session('username')){
+            $this->assign('username',session('username'));
+        }else{
+            $this->redirect('Login/login');
+        }
         return $this->fetch();
+
+    }
+    public function do_zhuce(){
+        $data=input('post.');
+        $db=db('user')->where("username='".$data['username']."'")->find();
+        if($db){
+            $this->success('已有该用户','index/login');
+        }else{
+            $info=db('user')->insert($data);
+            if($info){
+                $this->success('注册成功','index/login');
+            }
+        }
+    }
+    public function do_login(){
+        $data=input('post.');
+        $username=input('post.username');
+        $db=db('user')->where("username='".$data['username']."'")->find();
+        if($db){
+            if($data['password']==$db['password']){
+                session('username',$data['username']);
+                $result=[
+                    'msg'=>1,
+                    'statu'=>'登录成功'
+                ];
+                if(isset($data['ischeck']))
+                {
+                    cookie('username',$username,864000);
+                }
+                return json($result);
+            }else{
+                $result=[
+                    'msg'=>2,
+                    'statu'=>'密码错误'
+                ];
+                return json($result);
+            }
+
+        }else{
+            $result=[
+                'msg'=>3,
+                'statu'=>'用户名不存在'
+            ];
+            return json($result);
+        }
+
     }
     public function reg()
     {
